@@ -9,19 +9,22 @@ from tkinter import messagebox
 root = tk.Tk()
 root.withdraw()  # Hide the main window
 
+
 # Function to capture the screen
 def capture_screen(filename):
     # Capture and save the screenshot
     screenshot = ImageGrab.grab()
     screenshot.save(filename)
 
+
 # Function to read and parse the to-do list
 def read_todo_list(filepath):
     # Read and return tasks from the to-do list
     tasks = []
-    with open(filepath, 'r') as file:
+    with open(filepath, "r") as file:
         tasks = file.readlines()
     return tasks
+
 
 # Function to analyze the screenshot with Replicate API
 def analyze_screenshot(image_path, replicate_client):
@@ -32,15 +35,15 @@ def analyze_screenshot(image_path, replicate_client):
             "image": open(image_path, "rb"),
             "prompt": "What's going on in this screenshot? Be detailed.",
             "max_tokens": 1024,
-            "temperature": 0.2
-        }
+            "temperature": 0.2,
+        },
     )
     return output
+
 
 def activity_matches_todo_list(analysis_result, todo_list, replicate_client):
     # Format the prompt with analysis result and to-do list
     prompt = """Check if the analyzed content matches any task in the to-do list. Analyzed content: '{analysis_result}'. To-do list: {todo_list}. Give your reply only using the phrase 'NO NOPE IT DOES NOT MATCH' or 'YES YEAH'. There should be no other words in the reply."""
-    print(f"Asking the LLM to {prompt}")
     # Make the LLM call
     output = replicate_client.run(
         "mistralai/mistral-7b-instruct-v0.1:83b6a56e7c828e667f21fd596c338fd4f0039b46bcfa18d973e8e70e455fda70",
@@ -51,13 +54,30 @@ def activity_matches_todo_list(analysis_result, todo_list, replicate_client):
             "prompt": prompt,
             "temperature": 0.7,
             "max_new_tokens": 500,
-            "min_new_tokens": -1
-        }
+            "min_new_tokens": -1,
+        },
     )
 
     # Convert the output to a single string
-    response = ' '.join([str(item) for item in output])
-    print(f"She says {response}")
+    response = " ".join([str(item) for item in output])
+
+    # Make something that's explained
+    explain_prompt = """Explain exactly why you replied {response} to whether the analysed content matches any task in the to-do list. Be detailed. Analyzed content: '{analysis_result}'. To-do list: {todo_list}."""
+    explanation = replicate_client.run(
+        "mistralai/mistral-7b-instruct-v0.1:83b6a56e7c828e667f21fd596c338fd4f0039b46bcfa18d973e8e70e455fda70",
+        input={
+            "debug": False,
+            "top_k": 50,
+            "top_p": 0.9,
+            "prompt": explain_prompt,
+            "temperature": 0.7,
+            "max_new_tokens": 500,
+            "min_new_tokens": -1,
+        },
+    )
+    print(
+        f"She explains that your current issue is {' '.join([str(item) for item in explanation])}"
+    )
 
     # Check the entire response for the matching phrase
     if "YES" in response:
@@ -69,12 +89,14 @@ def activity_matches_todo_list(analysis_result, todo_list, replicate_client):
         print("Unexpected response from LLM:", response)
         return False
 
+
 # Function to show a popup if the user is off-track
 def show_popup():
     # Use the existing Tkinter root
     messagebox.showinfo("Reminder", "Go back to your to-do list!", parent=root)
     # After displaying the message, ensure the Tkinter window is ready to be used again
     root.update()
+
 
 # Main function to orchestrate the app
 def main():
@@ -101,6 +123,7 @@ def main():
 
         # Wait for 15 minutes before the next cycle
         time.sleep(15 * 60)
+
 
 if __name__ == "__main__":
     main()
