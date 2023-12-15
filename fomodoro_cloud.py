@@ -40,7 +40,7 @@ def analyze_screenshot(image_path, replicate_client):
 def activity_matches_todo_list(analysis_result, todo_list, replicate_client):
     # Format the prompt with analysis result and to-do list
     prompt = """Check if the analyzed content matches any task in the to-do list. Analyzed content: '{analysis_result}'. To-do list: {todo_list}. Give your reply only using the phrase 'NO NOPE IT DOES NOT MATCH' or 'YES YEAH'. There should be no other words in the reply."""
-
+    print(f"Asking the LLM to {prompt}")
     # Make the LLM call
     output = replicate_client.run(
         "mistralai/mistral-7b-instruct-v0.1:83b6a56e7c828e667f21fd596c338fd4f0039b46bcfa18d973e8e70e455fda70",
@@ -57,6 +57,7 @@ def activity_matches_todo_list(analysis_result, todo_list, replicate_client):
 
     # Convert the output to a single string
     response = ' '.join([str(item) for item in output])
+    print(f"She says {response}")
 
     # Check the entire response for the matching phrase
     if "YES" in response:
